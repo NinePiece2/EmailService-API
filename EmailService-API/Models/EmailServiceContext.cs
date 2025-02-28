@@ -40,30 +40,26 @@ namespace EmailService_API.Models
                 new Microsoft.Data.SqlClient.SqlParameter("@BodyHtml", bodyHtml),
             };
 
-            // Handle nullable parameters
             AddNullableParameter(parameters, "@CreatedEmail", CreatedEmail);
             AddNullableParameter(parameters, "@CreatedName", CreatedName);
             AddNullableParameter(parameters, "@MessageType", messageType);
             AddNullableParameter(parameters, "@CCEmail", ccEmail);
             AddNullableParameter(parameters, "@BCCEmail", bccEmail);
 
-            // Add isSecure parameter
             parameters.Add(new Microsoft.Data.SqlClient.SqlParameter("@IsSecure", (object)isSecure ?? DBNull.Value));
             parameters.Add(new Microsoft.Data.SqlClient.SqlParameter("@IsImportantTag", (object)isImportantTag ?? DBNull.Value));
 
-            // Execute the stored procedure
             var sqlParameters = parameters.ToArray();
+
             try
             {
-                EnqueueIncomingMessages.FromSqlRaw("EXEC EnqueueIncomingMessages @UserName, @Title, @CreatedEmail, @CreatedName, @IsSecure, @BodyHtml, @MessageType, @IsImportantTag, @CCEmail, @BCCEmail", sqlParameters).ToList();
-                return 1;
-            }
-            catch (InvalidOperationException ex)
-            {
+                // Use ExecuteSqlRaw to execute the command without expecting a result set.
+                this.Database.ExecuteSqlRaw("EXEC EnqueueIncomingMessages @UserName, @Title, @CreatedEmail, @CreatedName, @IsSecure, @BodyHtml, @MessageType, @IsImportantTag, @CCEmail, @BCCEmail", sqlParameters);
                 return 1;
             }
             catch (Exception e)
             {
+                // Log exception as needed
                 return -1;
             }
         }
@@ -76,9 +72,9 @@ namespace EmailService_API.Models
             }
             else
             {
-                // Add a parameter with DBNull.Value if parameterValue is null
                 parameters.Add(new Microsoft.Data.SqlClient.SqlParameter(parameterName, DBNull.Value));
             }
         }
+
     }
 }
