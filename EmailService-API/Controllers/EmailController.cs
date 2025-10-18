@@ -34,5 +34,12 @@ namespace EmailService_API.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
             }
         }
+        
+        [HttpGet]
+        [Route("StatusCheck")]
+        public IActionResult StatusCheck()
+        {
+            return Ok();
+        }
     }
 }
