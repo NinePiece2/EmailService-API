@@ -15,30 +15,22 @@ jobs:
     env:
       KUBECONFIG: /root/.kube/config
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      
       - name: Check for Running Deployments
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const runs = await github.rest.actions.listWorkflowRuns({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              workflow_id: 'deploy.yml',
-              status: 'in_progress'
-            });
-            
-            // Filter out the current run
-            const otherRunningDeployments = runs.data.workflow_runs.filter(run => run.id !== context.runId);
-            
-            if (otherRunningDeployments.length > 0) {
-              console.log('🚨 Another deployment is already running. Exiting.');
-              process.exit(0);
-            }
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          RUNNING_WORKFLOWS=$(gh run list --repo ${{ github.repository }} --workflow deploy.yml --status in_progress --json databaseId --jq 'length')
+          if [ "$RUNNING_WORKFLOWS" -gt 0 ]; then
+            echo "🚨 Another deployment is already running. Exiting."
+            exit 0
+          fi
+        shell: bash
+
+      - name: Checkout code
+        uses: actions/checkout@v6
 
       - name: Wait for all builds to complete
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -89,7 +81,7 @@ jobs:
 
       - name: Update Kubernetes Deployment
         run: |
-          # Update UI deployment (both containers use the same image)
+          # Update deployment
           kubectl set image deployment/emailservice-api \
             emailservice-api=ghcr.io/ninepiece2/emailservice-api:latest \
             -n emailservice-api
