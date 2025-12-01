@@ -5,6 +5,7 @@ using EmailService_API.Middleware;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using Microsoft.AspNetCore.DataProtection;
 
 namespace EmailService_API
 {
@@ -18,6 +19,9 @@ namespace EmailService_API
             var connectionString = builder.Configuration.GetConnectionString("EmailServiceContextConnection");
             builder.Services.AddDbContext<EmailServiceContext>(options =>
                 options.UseSqlServer(connectionString));
+            
+            builder.Services.AddDataProtection()
+                .PersistKeysToDbContext<EmailServiceContext>();
 
             builder.Services.AddControllers();
 
