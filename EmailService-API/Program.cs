@@ -19,8 +19,10 @@ namespace EmailService_API
             var connectionString = builder.Configuration.GetConnectionString("EmailServiceContextConnection");
             builder.Services.AddDbContext<EmailServiceContext>(options =>
                 options.UseSqlServer(connectionString));
-            
+
+            // Configure Data Protection to use database
             builder.Services.AddDataProtection()
+                .SetApplicationName("EmailService-API")
                 .PersistKeysToDbContext<EmailServiceContext>();
 
             builder.Services.AddControllers();

@@ -18,11 +18,13 @@ namespace EmailService_API.Services
     public class ApiKeyService : IApiKeyService
     {
         private readonly EmailServiceContext _context;
+        private readonly IServiceProvider _serviceProvider;
         private const string ApiKeyPrefix = "esapi_"; // EmailService API prefix
 
-        public ApiKeyService(EmailServiceContext context)
+        public ApiKeyService(EmailServiceContext context, IServiceProvider serviceProvider)
         {
             _context = context;
+            _serviceProvider = serviceProvider;
         }
 
         public async Task<(string apiKey, ApiKey keyRecord)> CreateApiKeyAsync(string name, string? description = null)
@@ -86,8 +88,25 @@ namespace EmailService_API.Services
 
             if (isValid)
             {
-                // Update last used date asynchronously without awaiting
-                _ = UpdateLastUsedDateAsync(storedKey.Id);
+                // Update last used date in background
+                _ = Task.Run(async () =>
+                {
+                    using var scope = _serviceProvider.CreateScope();
+                    var context = scope.ServiceProvider.GetRequiredService<EmailServiceContext>();
+                    try
+                    {
+                        var key = await context.ApiKeys.FindAsync(storedKey.Id);
+                        if (key != null)
+                        {
+                            key.LastUsedDate = DateTime.UtcNow;
+                            await context.SaveChangesAsync();
+                        }
+                    }
+                    catch
+                    {
+                        // Silently fail - not critical
+                    }
+                });
             }
 
             return isValid;
