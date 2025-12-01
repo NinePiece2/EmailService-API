@@ -51,7 +51,7 @@ spec:
               readOnly: true
           env:
             - name: ASPNETCORE_ENVIRONMENT
-              value: "production"
+              value: "Production"
             - name: ASPNETCORE_Kestrel__Certificates__Default__Path
               value: "/etc/ssl/certs/server.cert"
             - name: ASPNETCORE_Kestrel__Certificates__Default__KeyPath
