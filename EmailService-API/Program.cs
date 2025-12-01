@@ -1,9 +1,10 @@
 using EmailService_API.Models;
 using Microsoft.EntityFrameworkCore;
+using EmailService_API.Services;
+using EmailService_API.Middleware;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
-using EmailService_API.Services;
 
 namespace EmailService_API
 {
@@ -21,9 +22,56 @@ namespace EmailService_API
             builder.Services.AddControllers();
 
             builder.Services.AddEndpointsApiExplorer();
-            builder.Services.AddSwaggerGen();
+            builder.Services.AddSwaggerGen(c =>
+            {
+                // API Key authentication
+                c.AddSecurityDefinition("ApiKey", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+                {
+                    Description = "API Key authentication. Header: X-API-Key",
+                    Name = "X-API-Key",
+                    In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+                    Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
+                    Scheme = "ApiKeyScheme"
+                });
 
+                // JWT Bearer authentication
+                c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+                {
+                    Description = "JWT Authorization header using the Bearer scheme. Enter 'Bearer' [space] and then your token.",
+                    Name = "Authorization",
+                    In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+                    Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
+                    Scheme = "Bearer"
+                });
+                
+                c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+                {
+                    {
+                        new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+                        {
+                            Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                            {
+                                Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                                Id = "ApiKey"
+                            }
+                        },
+                        Array.Empty<string>()
+                    },
+                    {
+                        new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+                        {
+                            Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                            {
+                                Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                                Id = "Bearer"
+                            }
+                        },
+                        Array.Empty<string>()
+                    }
+                });
+            });
 
+            // JWT Authentication (for backward compatibility)
             builder.Services.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -39,12 +87,13 @@ namespace EmailService_API
                     ValidateIssuerSigningKey = true,
                     ValidIssuer = builder.Configuration["Jwt:Issuer"],
                     ValidAudience = builder.Configuration["Jwt:Audience"],
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] ?? ""))
                 };
             });
 
+            // Register services
+            builder.Services.AddScoped<IApiKeyService, ApiKeyService>();
             builder.Services.AddSingleton<ITokenService, TokenService>();
-
 
             var app = builder.Build();
 
@@ -57,10 +106,13 @@ namespace EmailService_API
 
             app.UseHttpsRedirection();
 
+            // JWT Authentication (for backward compatibility - must run before API key middleware)
             app.UseAuthentication();
 
+            // API Key authentication middleware (runs after JWT, sets up ClaimsPrincipal if no JWT)
+            app.UseApiKeyAuthentication();
+            
             app.UseAuthorization();
-
 
             app.MapControllers();
 

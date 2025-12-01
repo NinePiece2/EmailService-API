@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using EmailService_API.Models;
 using Microsoft.AspNetCore.Authorization;
+
 namespace EmailService_API.Controllers
 {
     [Authorize]

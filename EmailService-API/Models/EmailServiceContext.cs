@@ -20,11 +20,12 @@ namespace EmailService_API.Models
         }
 
         public virtual DbSet<EnqueueIncomingMessage> EnqueueIncomingMessages { get; set; }
+        public virtual DbSet<ApiKey> ApiKeys { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<EnqueueIncomingMessage>().HasNoKey();
-
+            modelBuilder.Entity<ApiKey>().HasKey(e => e.Id);
 
             OnModelCreatingPartial(modelBuilder);
         }
