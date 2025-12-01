@@ -84,7 +84,6 @@ jobs:
           # Update UI deployment (both containers use the same image)
           kubectl set image deployment/emailservice-api \
             emailservice-api=ghcr.io/ninepiece2/emailservice-api:latest \
-            emailservice-api-nginx=nginx:latest \
             -n emailservice-api
 
           # Add deployment annotations
