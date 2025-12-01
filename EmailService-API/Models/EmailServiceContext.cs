@@ -4,11 +4,12 @@ using Microsoft.EntityFrameworkCore;
 using System.Configuration;
 using System.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
+using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using System.IO;
 
 namespace EmailService_API.Models
 {
-    public partial class EmailServiceContext : DbContext
+    public partial class EmailServiceContext : DbContext, IDataProtectionKeyContext
     {
         public EmailServiceContext()
         {
@@ -21,6 +22,7 @@ namespace EmailService_API.Models
 
         public virtual DbSet<EnqueueIncomingMessage> EnqueueIncomingMessages { get; set; }
         public virtual DbSet<ApiKey> ApiKeys { get; set; }
+        public DbSet<DataProtectionKey> DataProtectionKeys { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
