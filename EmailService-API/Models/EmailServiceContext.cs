@@ -63,19 +63,19 @@ namespace EmailService_API.Models
         {
             try
             {
-                // Use SELECT to execute the PostgreSQL function with proper parameter binding
+                // Use SELECT to execute the PostgreSQL function with proper null handling
                 var result = this.Database.ExecuteSqlRaw(
                     "SELECT dbo.enqueueincomingmessages({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9})",
-                    userName,
-                    title,
-                    (object?)CreatedEmail ?? DBNull.Value,
-                    (object?)CreatedName ?? DBNull.Value,
-                    (object?)isSecure ?? DBNull.Value,
-                    bodyHtml,
-                    (object?)messageType ?? DBNull.Value,
-                    (object?)isImportantTag ?? DBNull.Value,
-                    (object?)ccEmail ?? DBNull.Value,
-                    (object?)bccEmail ?? DBNull.Value
+                    userName ?? (object)"",
+                    title ?? (object)"",
+                    CreatedEmail ?? (object)"",
+                    CreatedName ?? (object)"",
+                    isSecure.HasValue ? (object)isSecure.Value : (object)false,
+                    bodyHtml ?? (object)"",
+                    messageType ?? (object)"",
+                    isImportantTag.HasValue ? (object)isImportantTag.Value : (object)false,
+                    ccEmail ?? (object)"",
+                    bccEmail ?? (object)""
                 );
                 return 1;
             }
