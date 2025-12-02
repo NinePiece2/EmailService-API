@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using System.Configuration;
-using System.Data.SqlClient;
+using Npgsql;
 using Microsoft.Extensions.Configuration;
 using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using System.IO;
@@ -26,8 +26,33 @@ namespace EmailService_API.Models
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.HasDefaultSchema("dbo");
+
             modelBuilder.Entity<EnqueueIncomingMessage>().HasNoKey();
-            modelBuilder.Entity<ApiKey>().HasKey(e => e.Id);
+            
+            // Explicitly map ApiKey columns to match PostgreSQL naming
+            modelBuilder.Entity<ApiKey>(entity =>
+            {
+                entity.ToTable("apikeys");
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).HasColumnName("id");
+                entity.Property(e => e.Name).HasColumnName("name");
+                entity.Property(e => e.KeyHash).HasColumnName("keyhash");
+                entity.Property(e => e.KeyPrefix).HasColumnName("keyprefix");
+                entity.Property(e => e.IsActive).HasColumnName("isactive");
+                entity.Property(e => e.CreatedDate).HasColumnName("createddate");
+                entity.Property(e => e.LastUsedDate).HasColumnName("lastuseddate");
+                entity.Property(e => e.Description).HasColumnName("description");
+            });
+            
+            // Explicitly map DataProtectionKey columns to match PostgreSQL naming
+            modelBuilder.Entity<DataProtectionKey>(entity =>
+            {
+                entity.ToTable("dataprotectionkeys");
+                entity.Property(e => e.Id).HasColumnName("id");
+                entity.Property(e => e.FriendlyName).HasColumnName("friendlyname");
+                entity.Property(e => e.Xml).HasColumnName("xml");
+            });
 
             OnModelCreatingPartial(modelBuilder);
         }
@@ -36,46 +61,29 @@ namespace EmailService_API.Models
 
         public int EnqueueIncomingMessagesRun(string userName, string title, string? CreatedEmail, string? CreatedName, bool? isSecure, string bodyHtml, string? messageType, bool? isImportantTag, string? ccEmail, string? bccEmail)
         {
-            var parameters = new List<Microsoft.Data.SqlClient.SqlParameter>
-            {
-                new Microsoft.Data.SqlClient.SqlParameter("@UserName", userName),
-                new Microsoft.Data.SqlClient.SqlParameter("@Title", title),
-                new Microsoft.Data.SqlClient.SqlParameter("@BodyHtml", bodyHtml),
-            };
-
-            AddNullableParameter(parameters, "@CreatedEmail", CreatedEmail);
-            AddNullableParameter(parameters, "@CreatedName", CreatedName);
-            AddNullableParameter(parameters, "@MessageType", messageType);
-            AddNullableParameter(parameters, "@CCEmail", ccEmail);
-            AddNullableParameter(parameters, "@BCCEmail", bccEmail);
-
-            parameters.Add(new Microsoft.Data.SqlClient.SqlParameter("@IsSecure", (object)isSecure ?? DBNull.Value));
-            parameters.Add(new Microsoft.Data.SqlClient.SqlParameter("@IsImportantTag", (object)isImportantTag ?? DBNull.Value));
-
-            var sqlParameters = parameters.ToArray();
-
             try
             {
-                // Use ExecuteSqlRaw to execute the command without expecting a result set.
-                this.Database.ExecuteSqlRaw("EXEC EnqueueIncomingMessages @UserName, @Title, @CreatedEmail, @CreatedName, @IsSecure, @BodyHtml, @MessageType, @IsImportantTag, @CCEmail, @BCCEmail", sqlParameters);
+                // Use SELECT to execute the PostgreSQL function with proper parameter binding
+                var result = this.Database.ExecuteSqlRaw(
+                    "SELECT dbo.enqueueincomingmessages({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9})",
+                    userName,
+                    title,
+                    (object?)CreatedEmail ?? DBNull.Value,
+                    (object?)CreatedName ?? DBNull.Value,
+                    (object?)isSecure ?? DBNull.Value,
+                    bodyHtml,
+                    (object?)messageType ?? DBNull.Value,
+                    (object?)isImportantTag ?? DBNull.Value,
+                    (object?)ccEmail ?? DBNull.Value,
+                    (object?)bccEmail ?? DBNull.Value
+                );
                 return 1;
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
                 // Log exception as needed
+                Console.WriteLine($"Error executing enqueueincomingmessages: {ex.Message}");
                 return -1;
-            }
-        }
-
-        private void AddNullableParameter(List<Microsoft.Data.SqlClient.SqlParameter> parameters, string parameterName, string? parameterValue)
-        {
-            if (parameterValue != null)
-            {
-                parameters.Add(new Microsoft.Data.SqlClient.SqlParameter(parameterName, parameterValue));
-            }
-            else
-            {
-                parameters.Add(new Microsoft.Data.SqlClient.SqlParameter(parameterName, DBNull.Value));
             }
         }
 

@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace EmailService_API.Models
 {
-    [Table("ApiKeys")]
+    [Table("apikeys")]
     public class ApiKey
     {
         [Key]

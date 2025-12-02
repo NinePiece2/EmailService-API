@@ -18,7 +18,7 @@ namespace EmailService_API
             // Add services to the container.
             var connectionString = builder.Configuration.GetConnectionString("EmailServiceContextConnection");
             builder.Services.AddDbContext<EmailServiceContext>(options =>
-                options.UseSqlServer(connectionString));
+                options.UseNpgsql(connectionString));
 
             // Configure Data Protection to use database
             builder.Services.AddDataProtection()
