@@ -59,9 +59,9 @@ spec:
             - name: ASPNETCORE_URLS
               value: "https://*:8443;http://*:8080"
             - name: MasterKey
-              value: "MasterKey"
+              value: "8zEKtwlVbow5/aJMo4qSjn6PeQtlJ6vilNzhJHtTAtPsLvv2eXkrAshflaxAP8NJy4l69fCYmhgvt1P3oE1LQuKEyGIQnpFmvfd2Oef7xgflatErofEZZIYJbuv9zaUpLT/nkAD/xFt2ngmSJiKeTSyhoqQUDi+L+28x1JBgvXg="
             - name: Jwt__Key
-              value: "Jwt_Key"
+              value: "8zEKtwlVbow5/aJMo4qSjn6PeQtlJ6vilNzhJHtTAtPsLvv2eXkrAshflaxAP8NJy4l69fCYmhgvt1P3oE1LQuKEyGIQnpFmvfd2Oef7xgflatErofEZZIYJbuv9zaUpLT/nkAD/xFt2ngmSJiKeTSyhoqQUDi+L+28x1JBgvXg="
             
 ---
 
@@ -78,8 +78,29 @@ spec:
       protocol: TCP
       port: 443
       targetPort: 8443
-      nodePort: 30008
-  type: LoadBalancer
+  type: ClusterIP
+
+---
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: emailservice-api-ingress
+  annotations:
+    haproxy-ingress.github.io/backend-protocol: "https"
+spec:
+  ingressClassName: haproxy
+  rules:
+    - host: emailserviceapi.romitsagu.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: emailservice-api-service
+                port:
+                  number: 443
 
 ---
 
